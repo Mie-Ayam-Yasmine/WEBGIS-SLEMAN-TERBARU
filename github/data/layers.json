@@ -1,0 +1,82 @@
+{
+  "layers": {
+    "NDVI": {
+      "file": "NDVI.png",
+      "bounds": {
+        "s": -7.83648609,
+        "w": 110.21593636,
+        "n": -7.541968,
+        "e": 110.54695654
+      },
+      "type": "kontinu",
+      "judul": "NDVI",
+      "colors": ["#F6FBF4", "#DCF1D5", "#B4DCAB", "#81C07A", "#419F44", "#1F7330", "#004616"]
+    },
+    "NDBI": {
+      "file": "NDBI.png",
+      "bounds": {
+        "s": -7.83648609,
+        "w": 110.21593636,
+        "n": -7.541968,
+        "e": 110.54695654
+      },
+      "type": "kontinu",
+      "judul": "NDBI",
+      "colors": ["#FCF5F2", "#FFD6C6", "#FFAA93", "#FF755F", "#EB2C31", "#AC0535", "#6D0026"]
+    },
+    "NDWI": {
+      "file": "NDWI.png",
+      "bounds": {
+        "s": -7.83648609,
+        "w": 110.21593636,
+        "n": -7.541968,
+        "e": 110.54695654
+      },
+      "type": "kontinu",
+      "judul": "NDWI",
+      "colors": ["#F4FAFE", "#D5E8F3", "#ACCCE4", "#7FABD3", "#5087C1", "#325FA2", "#273871"]
+    },
+    "NDCI": {
+      "file": "NDCI.png",
+      "bounds": {
+        "s": -7.83648609,
+        "w": 110.21593636,
+        "n": -7.541968,
+        "e": 110.54695654
+      },
+      "type": "kontinu",
+      "judul": "NDCI (Cloud Index)",
+      "colors": ["#F9F9F9", "#E1E1E1", "#BEBEBE", "#969696", "#6D6D6D", "#434343", "#1B1B1B"]
+    },
+    "KLAS4": {
+      "file": "KLAS4.png",
+      "bounds": {
+        "s": -7.83649,
+        "w": 110.21593433,
+        "n": -7.541968,
+        "e": 110.54695891
+      },
+      "type": "kelas"
+    },
+    "KLAS0": {
+      "file": "KLAS0.png",
+      "bounds": {
+        "s": -7.83649,
+        "w": 110.21593433,
+        "n": -7.541968,
+        "e": 110.54695891
+      },
+      "type": "kelas"
+    },
+    "AWAN": {
+      "file": "AWAN.png",
+      "bounds": {
+        "s": -7.83649,
+        "w": 110.21593433,
+        "n": -7.541968,
+        "e": 110.54695891
+      },
+      "type": "kelas"
+    }
+  }
+}
