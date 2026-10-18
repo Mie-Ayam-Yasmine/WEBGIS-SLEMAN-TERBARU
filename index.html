@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebGIS Sleman - Indeks Citra Sentinel-2</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#F1ECE2}
+body{font-family:'DM Sans','Segoe UI',system-ui,sans-serif;color:#26302D;font-size:14px}
+
+/* bilah atas */
+.navbar{background:#16302B;height:52px;display:flex;align-items:center;padding:0 22px;gap:28px}
+.brand{color:#F4EFE6;font-weight:700;letter-spacing:.01em;white-space:nowrap}
+.brand small{font-weight:400;font-size:12px;color:#B9C4BE;margin-left:10px}
+.tabs{display:flex;height:100%}
+.tabs button{background:transparent;border:0;border-bottom:3px solid transparent;color:#C9D3CD;
+  padding:0 18px;font:500 13px 'DM Sans',sans-serif;cursor:pointer}
+.tabs button:hover{color:#fff}
+.tabs button.active{color:#fff;border-bottom-color:#D9A441}
+
+.view{display:none}
+.view.active{display:block}
+
+/* peta dan panel */
+.map-wrap{position:relative;height:calc(100vh - 52px)}
+#peta{width:100%;height:100%;background:#E8E3D8;font-family:'DM Sans',sans-serif}
+.panel-f{position:absolute;z-index:1100;background:#FBF8F2;border:1px solid #CFC6B4;border-radius:3px;
+  box-shadow:0 1px 3px rgba(22,48,43,.22);padding:14px 16px}
+.panel-kiri{top:14px;left:14px;width:290px;max-height:calc(100% - 28px);overflow-y:auto}
+.leaflet-top.leaflet-left{left:318px}
+.sec{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#7A7364;margin:16px 0 7px}
+.sec.first{margin-top:0}
+.hint{color:#7A7364;font-size:12px;line-height:1.4;margin:8px 0 0}
+.note{color:#7A7364;font-size:11px;line-height:1.45;margin:10px 0 0}
+select,input[type=text]{width:100%;padding:7px 10px;border:1px solid #CFC6B4;border-radius:3px;background:#fff;
+  font:13px 'DM Sans',sans-serif;color:#26302D}
+select:focus,input[type=text]:focus{outline:0;border-color:#16302B}
+.opt{display:flex;align-items:center;gap:6px;margin:5px 0;font-size:13px;cursor:pointer}
+.opt input{margin:0}
+.sw{display:inline-block;width:18px;height:10px;margin-right:2px;border:1px solid rgba(0,0,0,.28)}
+.btn-ghost{background:transparent;border:1px solid #16302B;color:#16302B;border-radius:3px;
+  font:500 12px 'DM Sans',sans-serif;padding:6px 12px;cursor:pointer}
+.btn-ghost:hover{background:#16302B;color:#fff}
+.btn-ghost.full{width:100%}
+.row2{display:flex;gap:6px;margin-top:6px}
+.row2 .btn-ghost{flex:1}
+input[type=range]{width:100%;accent-color:#B8472F}
+
+/* legenda */
+.info.legend{background:#FBF8F2;border:1px solid #CFC6B4;border-radius:3px;font-size:12px;line-height:18px;
+  padding:8px 10px;max-height:60vh;overflow-y:auto;box-shadow:none}
+.legend .lg{margin-bottom:8px}
+.legend .lg:last-child{margin-bottom:0}
+.legend .lt{font-weight:700;color:#16302B;margin-bottom:3px}
+.legend .li{display:flex;align-items:center;gap:6px}
+.legend .li i{width:16px;height:12px;border:1px solid rgba(0,0,0,.25);display:inline-block}
+.legend .bar{height:10px;border:1px solid rgba(0,0,0,.25);width:150px}
+.legend .tick{display:flex;justify-content:space-between;width:150px;font-size:11px;color:#5E5A4E}
+
+/* pop up */
+.leaflet-popup-content-wrapper{background:#FBF8F2;color:#26302D;border-radius:3px;box-shadow:0 1px 4px rgba(22,48,43,.3)}
+.leaflet-popup-tip{background:#FBF8F2}
+.leaflet-popup-content{margin:14px 16px;font-family:'DM Sans',sans-serif;font-size:13px}
+.kec-nama{font-size:19px;font-weight:700;margin:0 0 2px;color:#16302B}
+.kec-luas{font-size:12.5px;color:#5E5A4E;margin:0 0 10px}
+table.stat{width:100%;border-collapse:collapse;font-size:12px}
+table.stat th{font-weight:700;color:#7A7364;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  padding:4px 3px;border-bottom:1.5px solid #16302B;text-align:right}
+table.stat th:first-child{text-align:left}
+table.stat td,table.stat tbody th{padding:5px 3px;border-bottom:1px solid #E4DDCC}
+table.stat tbody th{text-align:left;color:#16302B;font-size:12px;letter-spacing:0;text-transform:none}
+table.stat td.n{font-family:'DM Mono',ui-monospace,monospace;text-align:right;font-size:11.5px}
+.awan-box{margin-top:12px;padding:8px 10px;background:#EFE9DA;border-left:3px solid #7F7F7F;font-size:12.5px}
+.kec-label{background:transparent;border:0;box-shadow:none;font-weight:700;font-size:10.5px;color:#1B1B1B;
+  text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;padding:0}
+.kec-label:before{display:none}
+.pix{image-rendering:pixelated}
+
+/* halaman */
+.page{max-width:1280px;margin:0 auto;padding:24px 26px 40px}
+.page-title{font-size:22px;font-weight:700;color:#16302B;margin:0 0 4px}
+.page-sub{color:#5E5A4E;margin:0 0 14px;max-width:820px;line-height:1.5}
+.tbl-tools{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.tbl-tools input{max-width:240px}
+.tbl-wrap{overflow-x:auto;border:1px solid #CFC6B4;border-radius:3px;background:#FBF8F2}
+table.data{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+table.data th{background:#EDE6D6;color:#16302B;font-size:11.5px;text-align:right;padding:8px 10px;cursor:pointer;
+  border-bottom:1.5px solid #16302B;user-select:none}
+table.data th:first-child,table.data td:first-child{text-align:left}
+table.data td{padding:7px 10px;border-bottom:1px solid #E4DDCC;text-align:right;font-family:'DM Mono',ui-monospace,monospace;font-size:12px}
+table.data td:first-child{font-family:'DM Sans',sans-serif;font-weight:500}
+table.data tbody tr{cursor:pointer}
+table.data tbody tr:hover{background:#F3ECDC}
+.info-card{background:#FBF8F2;border:1px solid #CFC6B4;border-radius:3px;padding:18px 22px;margin-bottom:18px}
+.info-card h3{font-size:16px;font-weight:700;color:#16302B;margin:0 0 10px}
+.info-card h4{font-size:13.5px;font-weight:700;color:#16302B;margin:16px 0 6px}
+.info-card p,.info-card li{line-height:1.6;max-width:900px}
+.info-card table.stat th,.info-card table.stat td{text-align:left;vertical-align:top;padding:7px 8px;font-size:13px;font-family:'DM Sans',sans-serif}
+
+#galat{display:none;margin:20px;padding:14px 18px;background:#FBE9E5;border:1px solid #D73027;border-radius:3px;max-width:760px}
+
+@media(max-width:820px){
+  .brand small{display:none}
+  .panel-kiri{width:calc(100% - 28px);max-height:38%}
+  .leaflet-top.leaflet-left{left:10px;top:auto;bottom:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="brand">WebGIS Kabupaten Sleman <small>Indeks citra Sentinel-2</small></div>
+  <div class="tabs">
+    <button data-tab="peta" class="active">Peta</button>
+    <button data-tab="tabel">Tabel statistik</button>
+    <button data-tab="info">Information</button>
+  </div>
+</div>
+
+<div id="galat"></div>
+
+<!-- ============ PETA ============ -->
+<div id="v-peta" class="view active">
+  <div class="map-wrap">
+    <div id="peta"></div>
+    <div class="panel-f panel-kiri">
+      <div class="sec first">Cari kecamatan</div>
+      <select id="cari"><option value="">Ketik / pilih nama kecamatan</option></select>
+      <button id="reset" class="btn-ghost full" style="margin-top:6px">Tampilkan seluruh Sleman</button>
+      <p class="hint">Klik wilayah kecamatan pada peta, atau cari namanya, untuk menampilkan pop up statistik.</p>
+
+      <div class="sec">Layer peta</div>
+      <div id="layer-list"></div>
+      <label class="opt"><input type="checkbox" id="lain"> Tampilkan area tidak terklasifikasi</label>
+      <div class="row2">
+        <button id="semua" class="btn-ghost">Semua layer</button>
+        <button id="kosong" class="btn-ghost">Kosongkan</button>
+      </div>
+      <p class="note">NDCI dihitung dari seluruh piksel termasuk yang berawan, sehingga piksel awan tetap tampil.
+        Layer "Awan (kelas SCL)" menampilkan sebaran awan menurut band SCL.</p>
+
+      <div class="sec">Transparansi layer</div>
+      <input type="range" id="opasitas" min="0.2" max="1" step="0.05" value="0.75">
+
+      <div class="sec">Peta dasar</div>
+      <label class="opt"><input type="radio" name="dasar" value="terang" checked> Peta terang</label>
+      <label class="opt"><input type="radio" name="dasar" value="osm"> OpenStreetMap</label>
+      <label class="opt"><input type="radio" name="dasar" value="satelit"> Citra satelit</label>
+
+      <div class="sec">Batas dan nama</div>
+      <label class="opt"><input type="checkbox" id="t-batas" checked> Batas kecamatan</label>
+      <label class="opt"><input type="checkbox" id="t-nama" checked> Nama kecamatan</label>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TABEL ============ -->
+<div id="v-tabel" class="view">
+  <div class="page">
+    <h2 class="page-title">Statistik zonal per kecamatan</h2>
+    <p class="page-sub">Nilai NDVI, NDBI, dan NDWI dihitung dari piksel bebas awan, sedangkan NDCI (Cloud Index)
+      dihitung dari seluruh piksel termasuk piksel berawan. Klik satu baris untuk membuka kecamatan tersebut di peta.</p>
+    <div class="tbl-tools">
+      <input type="text" id="tbl-cari" placeholder="Cari kecamatan...">
+      <button id="unduh" class="btn-ghost">Simpan seluruh tabel (CSV)</button>
+    </div>
+    <div class="tbl-wrap"><table class="data" id="tabel"></table></div>
+  </div>
+</div>
+
+<!-- ============ INFORMATION ============ -->
+<div id="v-info" class="view">
+  <div class="page">
+    <h2 class="page-title">Information</h2>
+    <p class="page-sub">Profil pembuat WebGIS dan gambaran lokasi peta, yaitu Kabupaten Sleman.</p>
+
+    <div class="info-card">
+      <h3>1. Pembuat</h3>
+      <table class="stat">
+        <thead><tr><th>No</th><th>Nama</th><th>NRP</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Anis Tika Utami</td><td>5016241031</td></tr>
+          <tr><td>2</td><td>Belia Sekar Saraswara</td><td>5016241033</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-card">
+      <h3>2. Informasi Lokasi Peta</h3>
+      <p>Kabupaten Sleman berada di bagian utara Daerah Istimewa Yogyakarta, dengan luas sekitar 574,8 km² dan terbagi
+        menjadi 17 kecamatan. Letaknya kurang lebih pada 110°15' - 110°30' BT dan 7°34' - 7°47' LS. Di sebelah utara
+        berbatasan dengan Kabupaten Magelang dan Boyolali (Jawa Tengah), di timur dengan Kabupaten Klaten, di selatan
+        dengan Kabupaten Bantul dan Kota Yogyakarta, serta di barat dengan Kabupaten Kulon Progo dan Magelang.</p>
+
+      <h4>Topografi</h4>
+      <p>Topografi Sleman membentang dari puncak Gunung Merapi di utara hingga dataran rendah di selatan. Ketinggian
+        wilayah berkisar dari sekitar 100 mdpl di bagian selatan hingga sekitar 2.500 mdpl di lereng atas Merapi.
+        Secara umum wilayahnya dibagi menjadi tiga zona.</p>
+      <table class="stat">
+        <thead><tr><th>Zona</th><th>Wilayah</th><th>Karakteristik</th></tr></thead>
+        <tbody>
+          <tr><td><b>Lereng dan kaki Gunung Merapi (utara)</b></td>
+            <td>Cangkringan, Pakem, Turi, dan sebagian Tempel serta Ngemplak</td>
+            <td>Bergelombang hingga curam, ketinggian tertinggi, curah hujan lebih besar, tanah regosol dari material
+              vulkanik. Sebagian wilayah masuk kawasan Taman Nasional Gunung Merapi dan rawan erupsi serta lahar.</td></tr>
+          <tr><td><b>Dataran fluvio-vulkanik (tengah hingga selatan)</b></td>
+            <td>Sleman, Ngaglik, Mlati, Depok, Godean, Seyegan, Minggir, Moyudan, Kalasan, dan Berbah</td>
+            <td>Datar hingga landai, tersusun dari endapan material vulkanik Merapi yang dibawa sungai. Lahan subur
+              dengan sawah beririgasi, serta permukiman dan kawasan perkotaan yang padat di sekitar Depok, Mlati, dan Ngaglik.</td></tr>
+          <tr><td><b>Perbukitan (timur dan selatan)</b></td>
+            <td>Prambanan, serta sebagian Berbah dan Gamping</td>
+            <td>Perbukitan bergelombang dengan batuan sedimen dan vulkanik tua, tanah relatif lebih tipis, dan lahan
+              lebih kering dibanding dataran.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Hidrologi dan iklim</h4>
+      <ul>
+        <li>Sungai-sungai berhulu di Merapi dan mengalir ke arah selatan, antara lain Kali Krasak, Bedog, Code,
+          Gajahwong, Boyong, Kuning, Opak, dan Gendol. Kali Progo membatasi wilayah di sisi barat.</li>
+        <li>Iklim tropis dengan musim hujan dan kemarau. Curah hujan cenderung lebih tinggi ke arah lereng Merapi.</li>
+      </ul>
+
+      <h4>Indeks spektral</h4>
+      <table class="stat">
+        <thead><tr><th>Indeks</th><th>Rumus</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><b>NDVI</b></td><td>(B08 - B04) / (B08 + B04)</td><td>Kerapatan vegetasi. Piksel vegetasi: NDVI ≥ 0,3.</td></tr>
+          <tr><td><b>NDBI</b></td><td>(B11 - B08) / (B11 + B08)</td><td>Lahan terbangun. Piksel bangunan: NDBI &gt; 0.</td></tr>
+          <tr><td><b>NDWI</b></td><td>(B03 - B08) / (B03 + B08)</td><td>Badan air. Piksel perairan: NDWI &gt; 0.</td></tr>
+          <tr><td><b>NDCI (Cloud Index)</b></td><td>(B8A - B04) / (B8A + B04)</td>
+            <td>Indeks awan dari NIR sempit (865 nm) dan merah (665 nm), dihitung tanpa cloud mask sehingga piksel berawan tetap ada.</td></tr>
+          <tr><td><b>Kelas awan SCL</b></td><td>SCL 3, 8, 9, 10</td>
+            <td>Bayangan awan, awan probabilitas sedang, awan probabilitas tinggi, dan cirrus tipis. Piksel ini dibuang saat NDVI, NDBI, dan NDWI dihitung.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+"use strict";
+
+/* ---------- konstanta ---------- */
+const KELAS = [
+  {id:0, nama:"Tidak terklasifikasi",  warna:"#D9D4C7"},
+  {id:1, nama:"Vegetasi",              warna:"#1A9850"},
+  {id:2, nama:"Bangunan",              warna:"#D73027"},
+  {id:3, nama:"Perairan",              warna:"#2C7BB6"},
+  {id:4, nama:"Bayangan awan (SCL 3)", warna:"#5E4FA2"},
+  {id:5, nama:"Awan sedang (SCL 8)",   warna:"#FDAE61"},
+  {id:6, nama:"Awan tinggi (SCL 9)",   warna:"#F46D43"},
+  {id:7, nama:"Cirrus tipis (SCL 10)", warna:"#ABD9E9"}
+];
+const grad = a => "linear-gradient(90deg," + a.join(",") + ")";
+const LAYER_DEF = [
+  {key:"KLAS", label:"Peta komposit (klasifikasi)", sw:grad(KELAS.slice(1).map(k=>k.warna))},
+  {key:"NDVI", label:"NDVI (vegetasi)",   sw:grad(["#e5f5e0","#00441b"])},
+  {key:"NDBI", label:"NDBI (bangunan)",   sw:grad(["#fee0d2","#99000d"])},
+  {key:"NDWI", label:"NDWI (perairan)",   sw:grad(["#deebf7","#08306b"])},
+  {key:"NDCI", label:"NDCI (Cloud Index)",sw:grad(["#f2f2f2","#252525"])},
+  {key:"AWAN", label:"Awan (kelas SCL)",  sw:grad(KELAS.slice(4).map(k=>k.warna))}
+];
+const SEMUA = LAYER_DEF.map(l=>l.key);
+const INDEKS = ["NDVI","NDBI","NDWI","NDCI"];
+const STAT = ["Mean","Maks","Min","Median","Std_Dev"];
+
+const fmt = (x,d=3) => (x===null||x===undefined||isNaN(x)) ? "-" : Number(x).toFixed(d).replace(".",",");
+const fmtLuas = x => Number(x).toLocaleString("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---------- tab ---------- */
+const tabs = document.querySelectorAll(".tabs button");
+function bukaTab(nama){
+  tabs.forEach(b => b.classList.toggle("active", b.dataset.tab===nama));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id==="v-"+nama));
+  if (nama==="peta" && window._map) setTimeout(()=>window._map.invalidateSize(),50);
+}
+tabs.forEach(b => b.addEventListener("click", ()=>bukaTab(b.dataset.tab)));
+
+/* ---------- muat data ---------- */
+Promise.all([
+  fetch("data/kecamatan.geojson").then(r=>{ if(!r.ok) throw new Error("data/kecamatan.geojson"); return r.json(); }),
+  fetch("data/layers.json").then(r=>{ if(!r.ok) throw new Error("data/layers.json"); return r.json(); })
+]).then(([gj, cfg]) => init(gj, cfg))
+  .catch(err => {
+    const g = document.getElementById("galat");
+    g.style.display = "block";
+    g.innerHTML = "<b>Data tidak dapat dimuat</b> (" + err.message + "). Pastikan folder <code>data/</code> ada di samping " +
+      "<code>index.html</code>. Jika membuka file langsung dari komputer, jalankan server lokal " +
+      "(mis. <code>python -m http.server</code>) lalu buka <code>http://localhost:8000</code>.";
+  });
+
+function init(gj, cfg){
+  const feats = gj.features;
+  const namaList = feats.map(f=>f.properties.Kecamatan).sort((a,b)=>a.localeCompare(b));
+  const byName = {};
+  feats.forEach(f => byName[f.properties.Kecamatan] = f);
+
+  /* ---------- peta ---------- */
+  const map = L.map("peta",{zoomSnap:0.25});
+  window._map = map;
+  map.createPane("batas").style.zIndex = 450;
+
+  const dasarDef = {
+    terang:  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+              {subdomains:"abcd",maxZoom:20,attribution:"&copy; OpenStreetMap &copy; CARTO"}),
+    osm:     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+              {maxZoom:19,attribution:"&copy; OpenStreetMap"}),
+    satelit: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+              {maxZoom:19,attribution:"Esri World Imagery"})
+  };
+  let dasarAktif = dasarDef.terang.addTo(map);
+
+  const batasLayer = L.geoJSON(gj,{
+    pane:"batas",
+    style:{color:"#1B1B1B",weight:1.2,opacity:0.9,fillOpacity:0,fill:true},
+    onEachFeature:(f,l)=>{
+      l.bindTooltip(f.properties.Kecamatan,{sticky:true});
+      l.on("click",e=>pilih(f.properties.Kecamatan,e.latlng));
+      l.on("mouseover",()=>l.setStyle({weight:2.5,color:"#B8472F"}));
+      l.on("mouseout", ()=>batasLayer.resetStyle(l));
+    }
+  }).addTo(map);
+
+  const namaLayer = L.layerGroup(feats.map(f=>
+    L.marker([f.properties.pos_lat,f.properties.pos_lon],{
+      interactive:false,
+      icon:L.divIcon({className:"",html:""}),
+    }).bindTooltip(f.properties.Kecamatan,{permanent:true,direction:"center",className:"kec-label"})
+  )).addTo(map);
+
+  const sorot = L.geoJSON(null,{pane:"batas",interactive:false,
+    style:{color:"#B8472F",weight:3.5,fill:false}}).addTo(map);
+
+  const bb = batasLayer.getBounds();
+  map.fitBounds(bb);
+  L.control.scale({imperial:false,position:"bottomright"}).addTo(map);
+
+  /* ---------- panel layer ---------- */
+  const daftar = document.getElementById("layer-list");
+  LAYER_DEF.forEach(l=>{
+    const ada = l.key==="KLAS" ? (cfg.layers.KLAS4||cfg.layers.KLAS0) : cfg.layers[l.key];
+    const lb = document.createElement("label");
+    lb.className = "opt";
+    lb.innerHTML = '<input type="checkbox" value="'+l.key+'"'+(l.key==="KLAS"?" checked":"")+(ada?"":" disabled")+'>' +
+                   '<span class="sw" style="background:'+l.sw+'"></span>'+l.label+(ada?"":" (tidak tersedia)");
+    daftar.appendChild(lb);
+  });
+  const cbLayer = () => [...daftar.querySelectorAll("input")];
+  const aktifLayer = () => cbLayer().filter(c=>c.checked).map(c=>c.value);
+
+  /* ---------- layer raster ---------- */
+  let overlays = [];
+  const legenda = L.control({position:"bottomright"});
+  let legDiv;
+  legenda.onAdd = () => { legDiv = L.DomUtil.create("div","info legend"); legDiv.style.display="none"; return legDiv; };
+  legenda.addTo(map);
+
+  function tambahOverlay(def, opasitas){
+    const b = def.bounds;
+    const ov = L.imageOverlay("data/"+def.file, [[b.s,b.w],[b.n,b.e]],
+      {opacity:opasitas, className: def.type==="kelas" ? "pix" : ""}).addTo(map);
+    overlays.push(ov);
+  }
+  const lgKelas = (judul, arr) => '<div class="lg"><div class="lt">'+judul+'</div>' +
+    arr.map(k=>'<div class="li"><i style="background:'+k.warna+'"></i>'+k.nama+'</div>').join("")+'</div>';
+  const lgKontinu = (judul, cols) => '<div class="lg"><div class="lt">'+judul+'</div>' +
+    '<div class="bar" style="background:'+grad(cols)+'"></div><div class="tick"><span>-1</span><span>0</span><span>1</span></div></div>';
+
+  function gambarLayer(){
+    overlays.forEach(o=>map.removeLayer(o)); overlays = [];
+    const aktif = aktifLayer();
+    const op = parseFloat(document.getElementById("opasitas").value);
+    const lain = document.getElementById("lain").checked;
+    let html = "";
+
+    if (aktif.includes("KLAS")){
+      const def = lain ? cfg.layers.KLAS0 : cfg.layers.KLAS4;
+      if (def){ tambahOverlay(def,op);
+        html += lgKelas("Peta komposit", lain ? KELAS : KELAS.slice(1)); }
+    }
+    INDEKS.forEach(k=>{
+      if (aktif.includes(k) && cfg.layers[k]){
+        tambahOverlay(cfg.layers[k],op);
+        html += lgKontinu(cfg.layers[k].judul, cfg.layers[k].colors);
+      }
+    });
+    if (aktif.includes("AWAN") && cfg.layers.AWAN){
+      tambahOverlay(cfg.layers.AWAN,op);
+      html += lgKelas("Awan - kelas SCL", KELAS.slice(4));
+    }
+    legDiv.innerHTML = html;
+    legDiv.style.display = html ? "block" : "none";
+  }
+  daftar.addEventListener("change",gambarLayer);
+  document.getElementById("lain").addEventListener("change",gambarLayer);
+  document.getElementById("opasitas").addEventListener("input",()=>overlays.forEach(o=>o.setOpacity(parseFloat(document.getElementById("opasitas").value))));
+  document.getElementById("semua").addEventListener("click",()=>{ cbLayer().forEach(c=>{ if(!c.disabled) c.checked=true; }); gambarLayer(); });
+  document.getElementById("kosong").addEventListener("click",()=>{ cbLayer().forEach(c=>c.checked=false); gambarLayer(); });
+  gambarLayer();
+
+  /* ---------- peta dasar, batas, nama ---------- */
+  document.querySelectorAll('input[name="dasar"]').forEach(r=>r.addEventListener("change",e=>{
+    map.removeLayer(dasarAktif);
+    dasarAktif = dasarDef[e.target.value].addTo(map);
+    dasarAktif.bringToBack();
+  }));
+  document.getElementById("t-batas").addEventListener("change",e=>{
+    e.target.checked ? map.addLayer(batasLayer) : map.removeLayer(batasLayer);
+  });
+  document.getElementById("t-nama").addEventListener("change",e=>{
+    e.target.checked ? map.addLayer(namaLayer) : map.removeLayer(namaLayer);
+  });
+
+  /* ---------- pencarian & pop up ---------- */
+  const sel = document.getElementById("cari");
+  namaList.forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o); });
+
+  function popupHTML(nm){
+    const p = byName[nm].properties;
+    const baris = k => '<tr><th>'+k+'</th>'+STAT.map(s=>'<td class="n">'+fmt(p[k+"_"+s])+'</td>').join("")+'</tr>';
+    return '<div class="popup-kec"><h3 class="kec-nama">'+nm+'</h3>'+
+      '<p class="kec-luas">Luas '+fmtLuas(p.Luas_ha)+' ha ('+fmtLuas(p.Luas_km2)+' km²)</p>'+
+      '<table class="stat"><thead><tr><th>Indeks</th><th>Mean</th><th>Maks</th><th>Min</th><th>Median</th><th>SD</th></tr></thead><tbody>'+
+      INDEKS.map(baris).join("")+'</tbody></table>'+
+      '<div class="awan-box"><b>Awan (SCL): </b>'+fmt(p.Persen_Awan,2)+'% wilayah ('+fmt(p.Luas_Awan_ha,2)+' ha)</div></div>';
+  }
+
+  function pilih(nm, latlng){
+    sorot.clearLayers(); map.closePopup();
+    if (!nm || !byName[nm]) { sel.value=""; return; }
+    sel.value = nm;
+    sorot.addData(byName[nm]);
+    const p = byName[nm].properties;
+    const pos = latlng || L.latLng(p.pos_lat,p.pos_lon);
+    L.popup({minWidth:330,maxWidth:380,closeOnClick:false,autoPanPadding:[20,20]})
+      .setLatLng(pos).setContent(popupHTML(nm)).openOn(map);
+    map.flyToBounds(L.geoJSON(byName[nm]).getBounds());
+  }
+  window._pilih = pilih;
+  sel.addEventListener("change",()=>pilih(sel.value));
+  document.getElementById("reset").addEventListener("click",()=>{
+    sel.value=""; sorot.clearLayers(); map.closePopup(); map.flyToBounds(bb);
+  });
+
+  /* ---------- tabel ---------- */
+  const kolom = ["Kecamatan","Luas_ha","Luas_km2",
+    ...INDEKS.flatMap(i=>STAT.map(s=>i+"_"+s)),"Persen_Awan","Luas_Awan_ha"];
+  const judul = k => k.replace("Luas_ha","Luas (ha)").replace("Luas_km2","Luas (km2)")
+    .replace("Persen_Awan","Awan (%)").replace("Luas_Awan_ha","Luas awan (ha)").replace(/_/g," ");
+  const dataTabel = feats.map(f=>f.properties);
+  let urut = {k:"Kecamatan",asc:true};
+
+  function gambarTabel(){
+    const q = document.getElementById("tbl-cari").value.trim().toLowerCase();
+    let d = dataTabel.filter(r=>r.Kecamatan.toLowerCase().includes(q));
+    d.sort((a,b)=>{
+      const x=a[urut.k], y=b[urut.k];
+      const c = (typeof x==="string") ? x.localeCompare(y) : ((x??-Infinity)-(y??-Infinity));
+      return urut.asc ? c : -c;
+    });
+    const t = document.getElementById("tabel");
+    t.innerHTML = "<thead><tr>"+kolom.map(k=>'<th data-k="'+k+'">'+judul(k)+
+      (urut.k===k?(urut.asc?" ▲":" ▼"):"")+"</th>").join("")+"</tr></thead><tbody>"+
+      d.map(r=>"<tr data-n=\""+r.Kecamatan+"\">"+kolom.map(k=>{
+        if(k==="Kecamatan") return "<td>"+r[k]+"</td>";
+        const dg = /^(Luas|Persen)/.test(k) ? 2 : 3;
+        return "<td>"+fmt(r[k],dg)+"</td>";
+      }).join("")+"</tr>").join("")+"</tbody>";
+  }
+  document.getElementById("tabel").addEventListener("click",e=>{
+    const th = e.target.closest("th");
+    if (th){ const k=th.dataset.k; urut = {k, asc: urut.k===k ? !urut.asc : true}; gambarTabel(); return; }
+    const tr = e.target.closest("tbody tr");
+    if (tr){ bukaTab("peta"); setTimeout(()=>pilih(tr.dataset.n),120); }
+  });
+  document.getElementById("tbl-cari").addEventListener("input",gambarTabel);
+  gambarTabel();
+
+  document.getElementById("unduh").addEventListener("click",()=>{
+    const rows = [kolom.map(k=>'"'+judul(k)+'"').join(",")]
+      .concat(dataTabel.slice().sort((a,b)=>a.Kecamatan.localeCompare(b.Kecamatan))
+        .map(r=>kolom.map(k=>r[k]===null||r[k]===undefined?"":(k==="Kecamatan"?'"'+r[k]+'"':r[k])).join(",")));
+    const blob = new Blob(["\ufeff"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Statistik_Zonal_Kecamatan_Sleman.csv";
+    a.click(); URL.revokeObjectURL(a.href);
+  });
+}
+})();
+</script>
+</body>
+</html>
